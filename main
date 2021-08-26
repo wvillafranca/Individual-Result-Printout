@@ -1,0 +1,199 @@
+Try
+            If batch1DGView.SelectedCells.Count <= 0 Then
+                MsgBox("There is no selected request! Please select  from the list below first.", MsgBoxStyle.Information, Title:="Viewing Individual Result Form")
+
+            ElseIf batch1DGView.SelectedCells.Count > 0 Then
+
+                If IsDBNull(batch1DGView.Rows(batch1DGView.CurrentRow.Index).Cells(1).Value) Then
+                    MsgBox("There is no existing request.", MsgBoxStyle.Information, Title:="Viewing Individual Result Form")
+                Else
+
+                    idNo = batch1DGView.Rows(batch1DGView.CurrentRow.Index).Cells(18).Value
+                    labID = batch1DGView.Rows(batch1DGView.CurrentRow.Index).Cells(1).Value
+
+                    Form_Main.DateAndTime_Timer.Stop()
+
+                    Dim ds As New DataSet_CIF
+                    Dim cmd As New MySqlCommand
+                    Dim reader As MySqlDataReader
+                    Dim myReport As New ReportDocument
+                    Dim dscmd As New MySqlDataAdapter
+
+                    Dim fullName As String = ""
+                    Dim verificationCode As String = ""
+
+                    Dim objRpt As New CReport_IndividualResult
+
+                    'objRpt.Load()
+
+                    mcon.Close()
+                    mcon.ConnectionString = con
+
+                    cmd = New MySqlCommand()
+                    dscmd = New MySqlDataAdapter()
+
+                    mcon.Open()
+                    cmd.CommandText = "SELECT * FROM generalentrylisttable Where IDno = '" & idNo & "' AND LabID = '" & labID & "'"
+                    cmd.Connection = mcon
+                    dscmd.SelectCommand = cmd
+                    dscmd.Fill(ds, "DataTable_GenEntryList")
+                    reader = cmd.ExecuteReader
+                    Dim i As Integer = 0
+                    While reader.Read
+                        ds.Tables("DataTable_GenEntryList").Rows(i).Item(2) = reader("LastName").ToString + ", " + reader("FirstName").ToString + " " + reader("MiddleName").ToString
+                        If reader("LUDHMCClassification").ToString = "OPD" Then
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item(3) = "X"
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item(4) = " "
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item(14) = " "
+                        ElseIf reader("LUDHMCClassification").ToString = "REFERRAL" Then
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item(3) = " "
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item(4) = "X"
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item(14) = " "
+                        ElseIf reader("LUDHMCClassification").ToString = "INPATIENT" Then
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item(3) = " "
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item(4) = " "
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item(14) = "X"
+                        Else
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item(3) = " "
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item(4) = " "
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item(14) = " "
+                        End If
+                        If reader("Result").ToString = "DETECTED" Then
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item("Result") = "SARS-CoV-2 (causative agent of COVID-19) viral RNA detected"
+                        ElseIf reader("Result").ToString = "NOT DETECTED" Then
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item("Result") = "SARS-CoV-2 (causative agent of COVID-19) viral RNA NOT detected"
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item(14) = " "
+                        ElseIf reader("Result").ToString = "INVALID" Then
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item("Result") = "Invalid due to specimen quality"
+                        Else
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item("Result") = "N/A"
+                        End If
+
+                        If Convert.ToDateTime(reader("DateEncoded").ToString).DayOfWeek.ToString = "Monday" Then
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item("Status") = "PCA153"
+                            verificationCode = "PCA153"
+                        ElseIf Convert.ToDateTime(reader("DateEncoded").ToString).DayOfWeek.ToString = "Tuesday" Then
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item("Status") = "LJK571"
+                            verificationCode = "LJK571"
+                        ElseIf Convert.ToDateTime(reader("DateEncoded").ToString).DayOfWeek.ToString = "Wednesday" Then
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item("Status") = "WYA777"
+                            verificationCode = "WYA777"
+                        ElseIf Convert.ToDateTime(reader("DateEncoded").ToString).DayOfWeek.ToString = "Thursday" Then
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item("Status") = "TKK095"
+                            verificationCode = "TKK095"
+                        ElseIf Convert.ToDateTime(reader("DateEncoded").ToString).DayOfWeek.ToString = "Friday" Then
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item("Status") = "EGR123"
+                            verificationCode = "EGR123"
+                        ElseIf Convert.ToDateTime(reader("DateEncoded").ToString).DayOfWeek.ToString = "Saturday" Then
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item("Status") = "PFM278"
+                            verificationCode = "PFM278"
+                        ElseIf Convert.ToDateTime(reader("DateEncoded").ToString).DayOfWeek.ToString = "Sunday" Then
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item("Status") = "GDA456"
+                            verificationCode = "GDA456"
+                        Else
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item("Status") = "UNSPECIFIED"
+                            verificationCode = "UNSPECIFIED"
+                        End If
+                        'ds.Tables("DataTable_CIFPartSix").Rows.Add()
+                        'ds.Tables("DataTable_CIFPartSix").Rows(i).Item(3) = "N/A"
+
+                        ds.Tables("DataTable_GenEntryList").Rows(i).Item("LUDHMCClassification") = "N/A"
+
+                        fullName = reader("LastName").ToString + ", " + reader("FirstName").ToString + " " + reader("MiddleName").ToString
+
+                        'MsgBox(ds.Tables("DataTable_GenEntryList").Rows(0)(5).ToString)
+
+                        'MsgBox(verificationCode)
+
+                        Dim Generator As New MessagingToolkit.Barcode.BarcodeEncoder
+                        Generator.BackColor = Color.White
+                        Generator.LabelFont = New Font("Arial", 7, FontStyle.Regular)
+                        Generator.IncludeLabel = True
+                        'Generator.CustomLabel = txttext.Text
+
+                        Dim qrPIC As Image = New Bitmap(Generator.Encode(MessagingToolkit.Barcode.BarcodeFormat.QRCode, _
+                                                                         labID + Environment.NewLine + verificationCode + Environment.NewLine + fullName + _
+                                                                         Environment.NewLine + "LUCENA UNITED DOCTORS HOSPITAL AND MEDICAL CENTER"))
+
+                        qrPIC.Save("\\arn-pc\Users\Public\Documents\QR CODE\" + labID, System.Drawing.Imaging.ImageFormat.Png)
+
+                        Try
+
+                            ds.Tables("DataTable_GenEntryList").Rows(i).Item("DateEncoded") = "\\arn-pc\Users\Public\Documents\QR CODE\" + labID
+
+                            'PictureBox1.Image = New Bitmap(Generator.Encode(MessagingToolkit.Barcode.BarcodeFormat.QRCode, TextBox1.Text))
+                        Catch ex As Exception
+                            MsgBox(ex.ToString)
+                            '    'PictureBox1.Image = Nothing
+                        End Try
+
+                        'objRpt.SetParameterValue("Picture2", Signature1)
+
+                        'objRpt.SetParameterValue("QRPic", "C:\Users\Public\Pictures\Sample.png")
+
+                        i = i + 1
+
+                    End While
+                    mcon.Close()
+
+                    objRpt.Database.Tables("DataTable_GenEntryList").SetDataSource(ds.Tables("DataTable_GenEntryList"))
+
+                    Dim comm As New MySqlCommand
+                    Dim query As String = ""
+
+                    mcon.Close()
+                    mcon.Open()
+
+                    query = "SELECT * FROM cifpartonetable Where LUDHMCAccessionNo = '" & labID & "'"
+
+                    comm = New MySqlCommand(query, mcon)
+                    reader = comm.ExecuteReader
+                    Dim retrievedIDNo As String = "N/A"
+                    While reader.Read
+                        retrievedIDNo = reader("IDNo").ToString
+                    End While
+
+                    mcon.Close()
+
+                    cmd = New MySqlCommand()
+                    dscmd = New MySqlDataAdapter()
+
+                    mcon.Close()
+                    mcon.Open()
+                    cmd.CommandText = "SELECT * FROM cifpartsixtable Where IDNo = '" & retrievedIDNo & "'"
+                    cmd.Connection = mcon
+                    dscmd.SelectCommand = cmd
+                    dscmd.Fill(ds, "DataTable_CIFPartSix")
+                    mcon.Close()
+
+                    objRpt.Database.Tables("DataTable_CIFPartSix").SetDataSource(ds.Tables("DataTable_CIFPartSix"))
+                    objRpt.Section3.ReportObjects("qrPic").Top = 12175
+                    objRpt.Section3.ReportObjects("qrPic").Left = 8800
+
+                    Form_IndividualResultPrintout.CrystalReportViewer1.ReportSource = objRpt
+                    'Form_ReportSummary.CrystalReportViewer1.Refresh()
+                    Form_IndividualResultPrintout.CrystalReportViewer1.Zoom(120)
+                    'Form_ReportSummary.CrystalReportViewer1.Refresh()
+
+                    Form_IndividualResultPrintout.Label1.Text = "GENERATED INDIVIDUAL RESULT FOR Lab ID :  " + labID
+                    Form_IndividualResultPrintout.ToolStrip2.Visible = False
+                    Form_IndividualResultPrintout.ShowDialog()
+
+                End If
+
+            End If
+
+        Catch ex As Exception
+
+            If ex.ToString.Contains("MySql.Data.MySqlClient.MySqlException (0x80004005): Unable to connect to any of the specified MySQL hosts.") Then
+                MsgBox("SERVER could not be reach or SERVER IS CURRENTLY DOWN.", MessageBoxIcon.Information, "LUDHMC CENTRALIZED ENCODING SYSTEM")
+                'MsgBox("SERVER could not be reach or SERVER IS CURRENTLY DOWN." + Environment.NewLine + Environment.NewLine + ex.ToString, MessageBoxIcon.Information, "LUDHMC MEDICAL RECORDS TICKETING SYSTEM")
+                Me.Close()
+            Else
+
+                Form_ITSendErrorReport.RichTextBox1.Text = ex.ToString
+                Form_ITSendErrorReport.Show()
+
+            End If
+
+        End Try
